@@ -13,4 +13,6 @@
 }
 
 @property () NSData *data;
+
+- (IBAction) loginButtonTouched;
 @end

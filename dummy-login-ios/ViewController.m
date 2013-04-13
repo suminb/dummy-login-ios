@@ -28,17 +28,35 @@
     // Dispose of any resources that can be recreated.
 }
 
+- (IBAction) loginButtonTouched
+{
+    NSString *url = @"http://sandbox.smartrekmobile.com/welcome/default/user/login?_next=/welcome/default/index";
+    NSString *post = @"email=&password=";
+    NSData *postData = [post dataUsingEncoding:NSUTF8StringEncoding allowLossyConversion:YES];
+    
+    NSString *postLength = [NSString stringWithFormat:@"%d", [postData length]];
+    
+    NSMutableURLRequest *request = [[NSMutableURLRequest alloc] init];
+    [request setURL:[NSURL URLWithString:url]];
+    [request setHTTPMethod:@"POST"];
+    [request setValue:postLength forHTTPHeaderField:@"Content-Length"];
+    [request setValue:@"application/x-www-form-urlencoded" forHTTPHeaderField:@"Content-Type"];
+    [request setHTTPBody:postData];
+
+    [[NSURLConnection alloc] initWithRequest:request delegate:self];
+}
 
 //
 // Copied from http://stackoverflow.com/questions/5537297/ios-how-to-perform-a-http-post-request
 //
 - (void)connection:(NSURLConnection *)connection didReceiveResponse:(NSURLResponse *)response {
 //    [self.data setLength:0];
+
 }
 
 - (void)connection:(NSURLConnection *)connection didReceiveData:(NSData *)d {
 //    [self.data appendData:d];
-
+    NSLog(@"response = %@", [[NSString alloc] initWithData:d encoding:NSUTF8StringEncoding]);
 }
 
 - (void)connection:(NSURLConnection *)connection didFailWithError:(NSError *)error {
