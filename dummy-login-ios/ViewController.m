@@ -30,9 +30,26 @@
 
 - (IBAction) loginButtonTouched
 {
-    NSString *url = @"http://sandbox.smartrekmobile.com/welcome/default/user/login?_next=/welcome/default/index";
-    NSString *post = @"email=&password=";
-    NSData *postData = [post dataUsingEncoding:NSUTF8StringEncoding allowLossyConversion:YES];
+    flag = 1;
+    [self makeHttpPostRequest:@"http://sandbox.smartrekmobile.com/welcome/default/user/login?_next=/welcome/default/index" withData:@"email=john.doe@test.com&password=qwerasdf"];
+}
+
+- (IBAction) accessMemberPageButtonTouched
+{
+    flag = 2;
+    [self makeHttpPostRequest:@"http://sandbox.smartrekmobile.com/welcome/v1/member" withData:@""];
+}
+
+- (IBAction) logoutButtonTouched
+{
+    flag = 3;
+    NSHTTPCookieStorage *cookieStorage = [NSHTTPCookieStorage sharedHTTPCookieStorage];
+    [cookieStorage deleteCookie:authCookie];
+}
+
+- (void) makeHttpPostRequest:(NSString*)url withData:(NSString*)data
+{
+    NSData *postData = [data dataUsingEncoding:NSUTF8StringEncoding allowLossyConversion:YES];
     
     NSString *postLength = [NSString stringWithFormat:@"%d", [postData length]];
     
@@ -42,7 +59,20 @@
     [request setValue:postLength forHTTPHeaderField:@"Content-Length"];
     [request setValue:@"application/x-www-form-urlencoded" forHTTPHeaderField:@"Content-Type"];
     [request setHTTPBody:postData];
-
+    [request setHTTPShouldHandleCookies:YES];
+    
+    NSDictionary *cookieProperties = [NSDictionary dictionaryWithObjectsAndKeys:
+                                      @"http://sandbox.smartrekmobile.com/", NSHTTPCookieDomain,
+                                      @"/", NSHTTPCookiePath,
+                                      @"session_id_welcome", NSHTTPCookieName,
+                                      @"68.230.90.123-3f2b16b4-74bd-40bf-a440-24cf32bf8600", NSHTTPCookieValue,
+                                      nil];
+    NSHTTPCookie *cookie = [NSHTTPCookie cookieWithProperties:cookieProperties];
+    NSArray *cookieArray = [NSArray arrayWithObjects: cookie, nil];
+    NSDictionary *headers = [NSHTTPCookie requestHeaderFieldsWithCookies:cookieArray];
+    
+    [request setAllHTTPHeaderFields:headers];
+    
     [[NSURLConnection alloc] initWithRequest:request delegate:self];
 }
 
@@ -50,12 +80,23 @@
 // Copied from http://stackoverflow.com/questions/5537297/ios-how-to-perform-a-http-post-request
 //
 - (void)connection:(NSURLConnection *)connection didReceiveResponse:(NSURLResponse *)response {
-//    [self.data setLength:0];
+    
+    NSHTTPURLResponse *httpResponse = (NSHTTPURLResponse *)response;
+    NSLog(@"status code = %d", httpResponse.statusCode);
 
+    NSArray *cookies = [NSHTTPCookie cookiesWithResponseHeaderFields:httpResponse.allHeaderFields forURL:httpResponse.URL];
+    for (int i = 0; i < cookies.count; i++) {
+        NSHTTPCookie *cookie = [cookies objectAtIndex:i];
+        NSLog(@"%@ for %@", [cookie name], [cookie domain]);
+        
+        if ([[cookie name] isEqualToString:@"session_id_welcome"]) {
+            NSLog(@"Auth cookie has been saved");
+            authCookie = cookie;
+        }
+    }
 }
 
 - (void)connection:(NSURLConnection *)connection didReceiveData:(NSData *)d {
-//    [self.data appendData:d];
     NSLog(@"response = %@", [[NSString alloc] initWithData:d encoding:NSUTF8StringEncoding]);
 }
 
@@ -74,6 +115,8 @@
 
 // Handle basic authentication challenge if needed
 - (void)connection:(NSURLConnection *)connection didReceiveAuthenticationChallenge:(NSURLAuthenticationChallenge *)challenge {
+    NSLog(@"didReceiveAuthenticationChallenge");
+    
     NSString *username = @"username";
     NSString *password = @"password";
     

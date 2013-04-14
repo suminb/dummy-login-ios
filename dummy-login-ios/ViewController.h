@@ -10,9 +10,14 @@
 
 @interface ViewController : UIViewController {
     NSData *data;
+    NSInteger flag;
+    NSHTTPCookie *authCookie;
 }
 
 @property () NSData *data;
 
 - (IBAction) loginButtonTouched;
+- (IBAction) accessMemberPageButtonTouched;
+- (IBAction) logoutButtonTouched;
+- (void) makeHttpPostRequest:(NSString*)url withData:(NSString*)data;
 @end
